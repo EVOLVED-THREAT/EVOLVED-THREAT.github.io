@@ -1,0 +1,28 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Author from '../components/Author.astro';
+import { getCollection } from 'astro:content';
+
+const authors = await getCollection('authors');
+const sortedAuthors = authors.sort((a, b) => {
+  // First sort by order
+  const orderDiff = (a.data.order || Number.MAX_VALUE) - (b.data.order || Number.MAX_VALUE);
+  if (orderDiff !== 0) return orderDiff;
+  
+  // Then sort by ID (slug) if order is the same
+  return a.slug.localeCompare(b.slug);
+});
+---
+
+<Layout title="Authors | Evolved Threat" description="Security researchers and contributors at Evolved Threat">
+  <div class="mb-8">
+    <h1 class="text-4xl font-bold text-zinc-900 dark:text-zinc-100 mb-4">Authors</h1>
+    <p class="text-zinc-600 dark:text-zinc-400 mb-4">Meet the security researchers and contributors behind Evolved Threat.</p>
+  </div>
+
+  <div class="flex flex-col items-center gap-4 max-w-2xl mx-auto">
+    {sortedAuthors.map(author => (
+      <Author author={author} />
+    ))}
+  </div>
+</Layout>

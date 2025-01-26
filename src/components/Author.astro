@@ -1,0 +1,244 @@
+---
+import { Image } from 'astro:assets';
+import type { CollectionEntry } from 'astro:content';
+import { getCollection } from 'astro:content';
+import WorkSection from './WorkSection.astro';
+
+interface Props {
+  author: CollectionEntry<'authors'>;
+  showBio?: boolean;
+}
+
+const { author, showBio = false } = Astro.props;
+const { data } = author;
+
+const authorAdvisories = await getCollection('advisories', (entry) => 
+  entry.data.authors.some((author: { handle: string }) => author.handle === data.handle)
+);
+const authorPosts = await getCollection('blog', (entry) => 
+  entry.data.authors.some((author: { handle: string }) => author.handle === data.handle)
+);
+
+// Sort collections by date, most recent first
+const sortedAdvisories = authorAdvisories.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+const sortedPosts = authorPosts.sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+
+// Combine and sort blog posts and external writings
+const allWritings = [
+  ...sortedPosts.map(post => ({
+    title: post.data.title,
+    url: `/blog/${post.slug}`,
+    date: post.data.pubDate,
+    description: post.data.description,
+    authors: post.data.authors,
+    isExternal: false
+  })),
+  ...(data.externalWritings?.map((writing) => ({
+    title: writing.title,
+    url: writing.url,
+    date: writing.date,
+    description: writing.description,
+    authors: writing.authors,
+    isExternal: true
+  })) || [])
+].sort((a, b) => {
+  if (!a.date && !b.date) return 0;
+  if (!a.date) return 1;
+  if (!b.date) return -1;
+  return b.date.getTime() - a.date.getTime();
+});
+---
+
+<div class="bg-white dark:bg-zinc-900 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-800 w-full">
+  <a href={`/authors/${author.slug}`} class="block hover:opacity-80 transition-opacity no-underline">
+    <div class="p-4">
+      <div class="flex items-start gap-4">
+        {data.avatarPath && (
+          <div class="w-16 h-16 relative flex-shrink-0">
+            {() => {
+              try {
+                const imagePath = `../assets/${data.avatarPath}`;
+                return (
+                  <Image 
+                    src={import(imagePath)} 
+                    alt={data.name} 
+                    width={64} 
+                    height={64}
+                    class="rounded-full w-full h-full object-cover"
+                  />
+                );
+              } catch (error) {
+                console.error('Error loading image:', error);
+                return null;
+              }
+            }}
+          </div>
+        )}
+        <div class="flex flex-col min-w-0">
+          <h2 class="text-2xl font-bold text-zinc-900 dark:text-white mb-1">{data.name}</h2>
+          <p class="text-zinc-600 dark:text-zinc-400 mb-2">{data.title}</p>
+          <div class="flex gap-4">
+            {data.github && (
+              <a href={data.github} target="_blank" rel="noopener noreferrer" class="text-threat-red hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors" onclick="event.stopPropagation()">
+                GitHub
+              </a>
+            )}
+            {data.twitter && (
+              <a href={data.twitter} target="_blank" rel="noopener noreferrer" class="text-threat-red hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors" onclick="event.stopPropagation()">
+                Twitter
+              </a>
+            )}
+            {data.linkedin && (
+              <a href={data.linkedin} target="_blank" rel="noopener noreferrer" class="text-threat-red hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors" onclick="event.stopPropagation()">
+                LinkedIn
+              </a>
+            )}
+            {data.website && (
+              <a href={data.website} target="_blank" rel="noopener noreferrer" class="text-threat-red hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors" onclick="event.stopPropagation()">
+                Website
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  </a>
+
+  {showBio && (
+    <div class="border-t border-zinc-200 dark:border-zinc-800">
+      <div class="p-6">
+        <div class="prose dark:prose-invert max-w-none text-lg mb-8">
+          <p class="text-zinc-600 dark:text-zinc-400">{data.bio}</p>
+        </div>
+
+        <div class="flex flex-col gap-8">
+          {(authorPosts.length > 0 || data.externalWritings) && (
+            <WorkSection title="Writings">
+              <ul class="grid gap-2">
+                {allWritings.map((writing) => (
+                  <li class="flex flex-col">
+                    <div class="flex items-center">
+                      <span class="text-threat-red mr-2">•</span>
+                      <div class="flex items-center gap-2">
+                        <a 
+                          href={writing.url} 
+                          target={writing.isExternal ? "_blank" : undefined} 
+                          rel={writing.isExternal ? "noopener noreferrer" : undefined}
+                          class="text-threat-red hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                        >
+                          {writing.title}
+                        </a>
+                        {writing.isExternal && (
+                          <span class="inline-flex items-center rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-200">
+                            External
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {writing.authors && (
+                      <div class="text-zinc-600 dark:text-zinc-400 ml-5">
+                        By {writing.authors.map(author => author.name).join(', ')}
+                      </div>
+                    )}
+                    {writing.date && (
+                      <div class="text-zinc-600 dark:text-zinc-400 ml-5">
+                        {new Date(writing.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </WorkSection>
+          )}
+
+          {authorAdvisories.length > 0 && (
+            <WorkSection title="Security Advisories">
+              <ul class="grid gap-2">
+                {sortedAdvisories.map((advisory) => (
+                  <li class="flex flex-col">
+                    <div class="flex items-center">
+                      <span class="text-threat-red mr-2">•</span>
+                      <a 
+                        href={`/advisories/${(advisory.data.cve || advisory.slug).split(' ')[0]}`} 
+                        class="text-threat-red hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                      >
+                        {advisory.data.title}
+                      </a>
+                    </div>
+                    <div class="text-zinc-600 dark:text-zinc-400 ml-5">
+                      {new Date(advisory.data.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </WorkSection>
+          )}
+
+          {data.tools && data.tools.length > 0 && (
+            <WorkSection title="Tools">
+              <ul class="grid gap-2">
+                {[...data.tools]
+                  .sort((a, b) => {
+                    if (!a.date && !b.date) return 0;
+                    if (!a.date) return 1;
+                    if (!b.date) return -1;
+                    return b.date.getTime() - a.date.getTime();
+                  })
+                  .map((tool) => (
+                    <li class="flex flex-col">
+                      <div class="flex items-center">
+                        <span class="text-threat-red mr-2">•</span>
+                        <a href={tool.url} target="_blank" rel="noopener noreferrer" class="text-threat-red hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+                          {tool.name}
+                        </a>
+                      </div>
+                      <div class="text-zinc-600 dark:text-zinc-400 ml-5">
+                        {tool.description && (
+                          <span>{tool.description}</span>
+                        )}
+                        {tool.date && (
+                          <span>{tool.description ? " - " : ""}{new Date(tool.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}</span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+              </ul>
+            </WorkSection>
+          )}
+
+          {data.talks && data.talks.length > 0 && (
+            <WorkSection title="Talks">
+              <ul class="grid gap-2">
+                {[...data.talks]
+                  .sort((a, b) => {
+                    if (!a.date && !b.date) return 0;
+                    if (!a.date) return 1;
+                    if (!b.date) return -1;
+                    return b.date.getTime() - a.date.getTime();
+                  })
+                  .map((talk) => (
+                    <li class="flex flex-col">
+                      <div class="flex items-center">
+                        <span class="text-threat-red mr-2">•</span>
+                        <a href={talk.url} target="_blank" rel="noopener noreferrer" class="text-threat-red hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+                          {talk.title}
+                        </a>
+                      </div>
+                      <div class="text-zinc-600 dark:text-zinc-400 ml-5">
+                        {talk.description && (
+                          <span>{talk.description}</span>
+                        )}
+                        {talk.date && (
+                          <span>{talk.description ? " - " : ""}{new Date(talk.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}</span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+              </ul>
+            </WorkSection>
+          )}
+        </div>
+      </div>
+    </div>
+  )}
+</div>

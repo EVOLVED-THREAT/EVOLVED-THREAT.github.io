@@ -1,0 +1,69 @@
+---
+import Layout from "@layouts/Layout.astro";
+import { getCollection } from "astro:content";
+import Blog from "@components/Blog.astro";
+
+// Get all blog posts and transform them to the common format
+const blogPosts = await getCollection("blog");
+const transformedBlogPosts = blogPosts.map(post => ({
+  title: post.data.title,
+  url: `/blog/${post.slug}/`,
+  date: post.data.pubDate,
+  description: post.data.description,
+  authors: post.data.authors,
+  isExternal: false,
+  minimal: false
+}));
+
+import type { ContentExternalWriting } from "../types/writing";
+
+// Get all authors and their external writings
+const authors = await getCollection("authors");
+
+const transformedExternalPosts = authors.flatMap(author => 
+  (author.data.externalWritings as ContentExternalWriting[] | undefined)?.map(writing => ({
+    title: writing.title,
+    url: writing.url,
+    date: writing.date,
+    description: writing.description,
+    authors: writing.authors || [{ name: author.data.name, handle: author.data.handle }],
+    isExternal: true,
+    minimal: false
+  })) || []
+);
+
+// Combine and sort all posts by date
+const allPosts = [...transformedBlogPosts, ...transformedExternalPosts].sort((a, b) => {
+  if (!a.date && !b.date) return 0;
+  if (!a.date) return 1;
+  if (!b.date) return -1;
+  return b.date.valueOf() - a.date.valueOf();
+});
+---
+
+<Layout>
+  <section class="mb-16">
+    <div class="grid place-items-center text-center">
+      <h1 class="text-5xl md:text-8xl font-bold mb-4 dark:text-white text-zinc-900 flex flex-col">
+        <span>Defense Demands</span>
+        <span class="text-threat-red relative mt-2">Evolution</span>
+      </h1>
+    </div>
+  </section>
+  
+  <section>
+    <div class="flex items-baseline justify-between mb-8">
+      <h2 class="text-2xl font-semibold dark:text-zinc-100 text-zinc-900">
+        Latest Research
+      </h2>
+      <a
+        href="/blog/"
+        class="text-sm text-threat-red hover:text-threat-darker transition-colors"
+        >View all &rarr;</a
+      >
+    </div>
+    <ul class="grid grid-cols-1">
+      {allPosts.slice(0, 5).map((post) => <Blog {...post} />)}
+    </ul>
+  </section>
+</Layout>

@@ -1,0 +1,122 @@
+---
+interface Props {
+  // For page-based pagination
+  currentPage?: number;
+  totalPages?: number;
+  baseUrl?: string;
+  // For post-based pagination
+  nextPost?: { slug: string; data: { title: string } };
+  prevPost?: { slug: string; data: { title: string } };
+}
+
+const { currentPage, totalPages, baseUrl, nextPost, prevPost } = Astro.props;
+
+// Helper to generate page numbers with ellipsis
+function generatePageNumbers(current: number, total: number) {
+  const delta = 2;
+  const range = [];
+  const rangeWithDots = [];
+  let l;
+
+  range.push(1);
+
+  for (let i = current - delta; i <= current + delta; i++) {
+    if (i < total && i > 1) {
+      range.push(i);
+    }
+  }
+
+  if (total > 1) {
+    range.push(total);
+  }
+
+  for (let i of range) {
+    if (l) {
+      if (i - l === 2) {
+        rangeWithDots.push(l + 1);
+      } else if (i - l !== 1) {
+        rangeWithDots.push('...');
+      }
+    }
+    rangeWithDots.push(i);
+    l = i;
+  }
+
+  return rangeWithDots;
+}
+
+---
+
+{/* Post-based navigation */}
+{nextPost || prevPost ? (
+  <aside class="flex flex-col sm:flex-row mt-10 gap-4 w-full">
+    {nextPost && (
+      <a
+        href={`/blog/${nextPost.slug}/`}
+        class="group flex-1 text-sm flex flex-col grow p-4 rounded-lg border border-zinc-300 dark:border-zinc-700 dark:hover:border-zinc-400 hover:border-zinc-300 transition-all dark:hover:bg-zinc-600/20 hover:bg-zinc-100 hover:text-zinc-800 hover:bg-zinc-600/20"
+      >
+        <p class="mb-1 dark:text-zinc-300 text-zinc-700">&larr; Previous post</p>
+        <p class="font-semibold dark:text-zinc-300 text-zinc-700">
+          {nextPost.data.title}
+        </p>
+      </a>
+    )}
+    {prevPost && (
+      <a
+        href={`/blog/${prevPost.slug}/`}
+        class="group flex-1 text-sm flex flex-col text-right grow p-4 rounded-lg border border-zinc-300 dark:border-zinc-700 dark:hover:border-zinc-400 hover:border-zinc-300 transition-all dark:hover:bg-zinc-600/20 hover:bg-zinc-100 hover:text-zinc-800 hover:bg-zinc-600/20"
+      >
+        <p class="mb-1 dark:text-zinc-300 text-zinc-700">Next post &rarr;</p>
+        <p class="font-semibold dark:text-zinc-300 text-zinc-700">
+          {prevPost.data.title}
+        </p>
+      </a>
+    )}
+  </aside>
+) : null}
+
+{/* Page-based navigation */}
+{currentPage && totalPages && baseUrl ? (
+  <nav class="flex justify-center items-center gap-2 mt-8" aria-label="Pagination">
+    {currentPage > 1 && (
+      <a
+        href={currentPage === 2 ? baseUrl : `${baseUrl}/${currentPage - 1}`}
+        class="px-4 py-2 text-sm font-medium text-zinc-900 dark:text-zinc-100 bg-zinc-200 dark:bg-zinc-800 rounded hover:bg-zinc-300 dark:hover:bg-zinc-700"
+        aria-label="Previous page"
+      >
+        Previous
+      </a>
+    )}
+    
+    {generatePageNumbers(currentPage, totalPages).map((page) => 
+      page === '...' ? (
+        <span class="px-4 py-2 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+          {page}
+        </span>
+      ) : (
+        <a
+          href={page === 1 ? baseUrl : `${baseUrl}/${page}`}
+          class={`px-4 py-2 text-sm font-medium rounded ${
+            currentPage === page
+              ? 'bg-threat-red text-white'
+              : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-700'
+          }`}
+          aria-current={currentPage === page ? 'page' : undefined}
+          aria-label={`Page ${page}`}
+        >
+          {page}
+        </a>
+      )
+    )}
+
+    {currentPage < totalPages && (
+      <a
+        href={`${baseUrl}/${currentPage + 1}`}
+        class="px-4 py-2 text-sm font-medium text-zinc-900 dark:text-zinc-100 bg-zinc-200 dark:bg-zinc-800 rounded hover:bg-zinc-300 dark:hover:bg-zinc-700"
+        aria-label="Next page"
+      >
+        Next
+      </a>
+    )}
+  </nav>
+) : null}

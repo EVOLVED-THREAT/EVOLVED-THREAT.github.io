@@ -1,0 +1,239 @@
+---
+import Modal from "./Modal.astro";
+import { Image } from "astro:assets";
+import dominikImage from "../assets/me.jpg";
+import chebuyaImage from "../assets/chebuya.jpg";
+
+type AuthorImageMap = {
+  [K in "Dominik Penner" | "chebuya"]: ImageMetadata;
+};
+
+const authorImages: AuthorImageMap = {
+  "Dominik Penner": dominikImage,
+  "chebuya": chebuyaImage
+};
+
+// Fallback to default image if author not found
+const getAuthorImage = (authorName: string): ImageMetadata => {
+  const normalizedName = Object.keys(authorImages).find(
+    key => key.toLowerCase() === authorName.toLowerCase()
+  ) as keyof AuthorImageMap | undefined;
+  return normalizedName ? authorImages[normalizedName] : dominikImage;
+};
+
+interface Props {
+  title: string;
+  description: string;
+  details?: string | undefined;
+  cve?: string | undefined;
+  affecting: {
+    name: string;
+    version: string;
+  }[];
+  date: Date;
+  severity: 'HIGH' | 'MEDIUM' | 'LOW';
+  authors: {
+    name: string;
+    handle: string;
+  }[];
+  references?: string[] | undefined;
+}
+
+const { title, description, details, cve, affecting, date, severity, authors, references } = Astro.props;
+const Content = Astro.slots.has('default') ? true : false;
+const modalId = cve ? `modal-CVE-${cve.split(' ')[0]?.replace(/^cve-/i, '')}` : `modal-${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+
+const severityColor = {
+  HIGH: 'bg-red-600 text-white dark:bg-red-500 dark:text-white font-bold',
+  MEDIUM: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+  LOW: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
+};
+---
+
+<a href={`/advisories/CVE-${cve?.split(' ')[0]?.replace(/^cve-/i, '')}`} class="block p-4 sm:p-6 bg-white dark:bg-zinc-900 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-800 cursor-pointer hover:border-threat-red dark:hover:border-threat-red transition-colors relative overflow-hidden">
+  <!-- Mobile Layout -->
+  <div class="sm:hidden space-y-4">
+    <div class="space-y-2">
+      <h3 class="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+        {title}
+      </h3>
+      
+      <div class="flex flex-wrap items-center gap-2">
+        <span class={`px-2.5 py-0.5 rounded-full text-xs font-medium ${severityColor[severity]} whitespace-nowrap`}>
+          {severity}
+        </span>
+        {cve && (cve.includes(' ') ? cve.split(' ') : [cve]).map((id: string) => (
+          <span class="text-sm font-mono text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded whitespace-nowrap">
+            CVE-{id.replace(/^cve-/i, '')}
+          </span>
+        ))}
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 text-sm">
+      <span class="text-zinc-500 dark:text-zinc-500">
+        By {authors.map((author, i) => (
+          <>
+            {author.name}
+            {i < authors.length - 1 ? (i === authors.length - 2 ? ' & ' : ', ') : ''}
+          </>
+        ))}
+      </span>
+      <span class="text-zinc-400 dark:text-zinc-600">•</span>
+      <time datetime={date.toISOString()} class="text-zinc-600 dark:text-zinc-400">
+        {date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+      </time>
+    </div>
+  </div>
+
+  <!-- Desktop Layout -->
+  <div class="hidden sm:block">
+    <div class="absolute top-6 right-6 flex flex-col items-end gap-2">
+      <span class={`px-2.5 py-0.5 rounded-full text-xs font-medium ${severityColor[severity]} whitespace-nowrap`}>
+        {severity}
+      </span>
+      {cve && (cve.includes(' ') ? cve.split(' ') : [cve]).map((id: string) => (
+        <span class="text-sm font-mono text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded whitespace-nowrap">
+          CVE-{id.replace(/^cve-/i, '')}
+        </span>
+      ))}
+    </div>
+
+    <div class="pr-32">
+      <h3 class="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">
+        {title}
+      </h3>
+      
+      <div class="flex items-center gap-2 text-sm mb-4">
+        <span class="text-zinc-500 dark:text-zinc-500">
+          By {authors.map((author, i) => (
+            <>
+              {author.name}
+              {i < authors.length - 1 ? (i === authors.length - 2 ? ' & ' : ', ') : ''}
+            </>
+          ))}
+        </span>
+        <span class="text-zinc-400 dark:text-zinc-600">•</span>
+        <time datetime={date.toISOString()} class="text-zinc-600 dark:text-zinc-400">
+          {date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+        </time>
+      </div>
+    </div>
+  </div>
+
+  <!-- Common Content -->
+  <div class="mt-4 sm:pr-32">
+    <div>
+      <h4 class="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">DESCRIPTION</h4>
+      <p class="text-zinc-600 dark:text-zinc-400 text-sm mb-4">{description}</p>
+    </div>
+
+    <div>
+      <h4 class="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">AFFECTING</h4>
+      <ul class="space-y-1">
+        {affecting.map((item) => (
+          <li class="flex items-center space-x-2">
+            <span class="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1"></span>
+            <span class="text-zinc-600 dark:text-zinc-400">{item.name} • {item.version}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+</a>
+
+<Modal id={modalId}>
+  <div class="mb-4 px-4 sm:px-0">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{title}</h2>
+      <div class="flex flex-col items-end gap-2">
+        <span class={`px-2.5 py-0.5 rounded-full text-xs font-medium ${severityColor[severity]}`}>
+          {severity}
+        </span>
+        {cve && (cve.includes(' ') ? cve.split(' ') : [cve]).map((id: string) => (
+          <span class="text-sm font-mono text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded whitespace-nowrap">
+            CVE-{id.replace(/^cve-/i, '')}
+          </span>
+        ))}
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-4 mb-4">
+      {authors.map((author, i) => (
+        <div class="flex items-center gap-4 min-w-[200px]">
+          <div class="aspect-square rounded-full overflow-hidden">
+            <Image
+              src={getAuthorImage(author.name)}
+              alt={`${author.name}'s profile picture`}
+              loading="eager"
+              class="aspect-square w-10"
+              width={80}
+              height={80}
+            />
+          </div>
+          <div class="flex flex-col">
+            <p class="dark:text-zinc-400 text-zinc-700 text-sm">
+              <span class="font-semibold">{author.name}</span>
+              <a
+                class="dark:text-zinc-50 text-zinc-900 hover:underline block"
+                href={`https://x.com/${author.handle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                @{author.handle}
+              </a>
+            </p>
+            {i === 0 && (
+              <time datetime={date.toISOString()} class="text-sm text-zinc-600 dark:text-zinc-400">
+                {date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </time>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <div class="space-y-4 px-4 sm:px-0">
+    <div>
+      <h3 class="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">AFFECTING</h3>
+      <ul class="space-y-1">
+        {affecting.map((item) => (
+          <li class="flex items-center space-x-2">
+            <span class="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1"></span>
+            <span class="text-zinc-600 dark:text-zinc-400">{item.name} • {item.version}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <div>
+      <h3 class="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">DESCRIPTION</h3>
+      <p class="text-zinc-600 dark:text-zinc-400 break-words">{description}</p>
+    </div>
+
+    <div class="overflow-x-hidden">
+      <h3 class="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">DETAILS</h3>
+      {Content ? (
+        <div class="text-zinc-600 dark:text-zinc-400 prose dark:prose-invert max-w-none break-words">
+          <slot />
+        </div>
+      ) : (
+        <p class="text-zinc-600 dark:text-zinc-400">{details}</p>
+      )}
+    </div>
+    {references && references.length > 0 && (
+      <div>
+        <h3 class="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">REFERENCES</h3>
+        <ul class="space-y-1">
+          {references.map((ref) => (
+            <li>
+              <a href={ref} target="_blank" rel="noopener noreferrer" class="text-threat-red hover:underline text-sm break-words">
+                {ref}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+  </div>
+</Modal>

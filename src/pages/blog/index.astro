@@ -1,0 +1,55 @@
+---
+import Layout from "@layouts/Layout.astro";
+import { getCollection } from "astro:content";
+import Blog from "@components/Blog.astro";
+import SearchBar from "@components/SearchBar.astro";
+import type { ExternalPostProps } from "@components/Blog.astro";
+
+// Get all blog posts and transform them to the common format
+const blogPosts = await getCollection("blog");
+// Pass blog posts directly as CollectionEntry<"blog"> with minimal prop
+const transformedBlogPosts = blogPosts.map(post => ({
+  ...post,
+  minimal: false
+}));
+
+// Transform external writings to match ExternalPostProps
+const authors = await getCollection("authors");
+const transformedExternalPosts = authors.flatMap(author => 
+  author.data.externalWritings?.map(writing => ({
+    title: writing.title,
+    url: writing.url,
+    date: writing.date,
+    description: writing.description,
+    authors: writing.authors || [{ name: author.data.name, handle: author.data.handle }],
+    isExternal: true,
+    minimal: false
+  } satisfies ExternalPostProps)) || []
+);
+
+// Combine and sort all posts by date
+const allPosts = [...transformedBlogPosts, ...transformedExternalPosts].sort((a, b) => {
+  const dateA = 'data' in a ? a.data.pubDate : a.date;
+  const dateB = 'data' in b ? b.data.pubDate : b.date;
+  if (!dateA && !dateB) return 0;
+  if (!dateA) return 1;
+  if (!dateB) return -1;
+  return dateB.valueOf() - dateA.valueOf();
+});
+
+const title = "Blog - AstroZinc";
+const description =
+  "This is a collection of all the blog posts that I have written. I write about web development, programming, and other things that I find interesting.";
+---
+
+<Layout title={title} description={description}>
+  <SearchBar />
+  <h2 class="mt-12 text-2xl font-semibold dark:text-zinc-100 text-zinc-900">
+    Posts
+  </h2>
+  <ul class="mt-6 grid grid-cols-1">
+    {allPosts.map((post) => <Blog {...post} />)}
+  </ul>
+  <section class="text-center grid place-items-center mt-20">
+  </section>
+</Layout>

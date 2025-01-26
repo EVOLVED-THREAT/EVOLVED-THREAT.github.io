@@ -1,0 +1,61 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Advisory from "../components/Advisory.astro";
+import Pagination from "../components/Pagination.astro";
+import { getCollection } from "astro:content";
+
+// Get all advisories and sort by date
+const allAdvisories = await getCollection("advisories");
+const sortedAdvisories = allAdvisories
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+  .slice(0, 6); // First page only
+
+const totalPages = Math.ceil(allAdvisories.length / 6);
+---
+
+<Layout title="Security Advisories | Evolved Threat" description="Security advisories and vulnerability disclosures">
+  <div class="mb-8">
+    <h1 class="text-4xl font-bold text-zinc-900 dark:text-zinc-100 mb-4">Security Advisories</h1>
+    <p class="text-zinc-600 dark:text-zinc-400 mb-4">A collection of security advisories disclosed by Evolved Threat researchers.</p>
+    <div class="flex gap-2">
+      <a href="/advisories" class="px-3 py-1 rounded-full text-sm font-medium bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
+        All
+      </a>
+      <a href="/advisories/severity/high" class="px-3 py-1 rounded-full text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700">
+        High
+      </a>
+      <a href="/advisories/severity/medium" class="px-3 py-1 rounded-full text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700">
+        Medium
+      </a>
+      <a href="/advisories/severity/low" class="px-3 py-1 rounded-full text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700">
+        Low
+      </a>
+    </div>
+  </div>
+
+  <div class="grid gap-6 md:grid-cols-2 mb-8">
+    {sortedAdvisories.map(async (advisory) => {
+      const { Content } = await advisory.render();
+      return (
+        <Advisory 
+          title={advisory.data.title}
+          description={advisory.data.description}
+          cve={advisory.data.cve}
+          affecting={advisory.data.affecting}
+          date={advisory.data.date}
+          severity={advisory.data.severity}
+          authors={advisory.data.authors}
+          references={advisory.data.references}
+        >
+          <Content />
+        </Advisory>
+      );
+    })}
+  </div>
+
+  <Pagination 
+    currentPage={1}
+    totalPages={totalPages}
+    baseUrl="/advisories"
+  />
+</Layout>

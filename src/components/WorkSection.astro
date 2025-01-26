@@ -1,0 +1,41 @@
+---
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<script>
+  class WorkSection extends HTMLElement {
+    constructor() {
+      super();
+      const button = this.querySelector('button');
+      const content = this.querySelector('.content');
+      const icon = this.querySelector('.icon');
+      
+      button?.addEventListener('click', () => {
+        content?.classList.toggle('hidden');
+        icon?.classList.toggle('rotate-180');
+      });
+    }
+  }
+  customElements.define('work-section', WorkSection);
+</script>
+
+<work-section>
+  <button class="w-full flex items-center justify-between cursor-pointer group">
+    <h4 class="text-lg text-zinc-700 dark:text-zinc-300 mb-3 group-hover:text-threat-red dark:group-hover:text-threat-red transition-colors">{title}</h4>
+    <svg 
+      class="icon w-4 h-4 text-zinc-700 dark:text-zinc-300 transform transition-transform duration-200" 
+      fill="none" 
+      stroke="currentColor" 
+      viewBox="0 0 24 24"
+    >
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+    </svg>
+  </button>
+  <div class="content hidden">
+    <slot />
+  </div>
+</work-section>

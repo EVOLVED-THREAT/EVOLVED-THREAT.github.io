@@ -1,0 +1,213 @@
+---
+import Link from "@components/Link.astro";
+import { Icon } from "astro-icon/components";
+import { author, defaultMeta, navigation } from "@data/constants";
+import "@fontsource-variable/inter";
+import "@fontsource/jetbrains-mono";
+import Callout from "@components/MDX/Callout.astro";
+
+const twitter = "exylods"; // Twitter username, even though it's privated.
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: {
+    src: string;
+    alt: string;
+  };
+  pubDate?: Date;
+  wide?: boolean;
+}
+
+const {
+  title = defaultMeta.title,
+  description = defaultMeta.description,
+  ogImage = defaultMeta.ogImage,
+  pubDate,
+  wide = false,
+} = Astro.props;
+
+const ogImageURL = new URL(ogImage.src, Astro.site).href;
+const canonicalURL = new URL(Astro.url).href;
+---
+
+<!doctype html>
+<html lang="en-US" class="dark:[color-scheme:dark] scroll-smooth">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonicalURL} />
+    <meta name="title" content={title} />
+    <meta name="description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImageURL} />
+    <meta property="og:site_name" content={author} />
+    <meta property="og:image:alt" content={ogImage.alt} />
+    <meta property="og:locale" content="en_US" />
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content={canonicalURL} />
+    <meta name="twitter:site" content={twitter} />
+    <meta name="twitter:creator" content={twitter} />
+    <meta property="twitter:title" content={title} />
+    <meta property="twitter:description" content={description} />
+    <meta property="twitter:image" content={ogImageURL} />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="robots" content="follow, index" />
+    <meta name="author" content={author} />
+    <script is:inline>
+      // Initialize theme before page load to prevent flash
+      const darkClass = "dark";
+      const htmlTag = document.documentElement;
+      
+      function getCookie(name) {
+        const value = `; `;
+        const parts = document.cookie.split(value);
+        for (let i = 0; i < parts.length; i++) {
+          const part = parts[i].split("=");
+          if (part[0].trim() === name) {
+            return part[1];
+          }
+        }
+        return null;
+      }
+
+      function setCookie(name, value, expirationDays) {
+        const date = new Date();
+        date.setTime(date.getTime() + expirationDays * 24 * 60 * 60 * 1000);
+        const expires = `expires=${date.toUTCString()}`;
+        document.cookie = `${name}=${value}; ${expires}; path=/`;
+      }
+
+      function getThemePreference() {
+        return getCookie("darkMode") === null ? true : getCookie("darkMode") === "true";
+      }
+
+      // Set initial theme
+      const initialDarkMode = getThemePreference();
+      htmlTag.classList.toggle(darkClass, initialDarkMode);
+      htmlTag.setAttribute("data-theme", initialDarkMode ? "min-dark" : "min-light");
+
+      // Initialize icons after DOM is ready
+      document.addEventListener("DOMContentLoaded", () => {
+        const sunIcon = document.querySelector(".sun-icon");
+        const moonIcon = document.querySelector(".moon-icon");
+        if (sunIcon && moonIcon) {
+          sunIcon.classList.toggle("hidden", initialDarkMode);
+          moonIcon.classList.toggle("hidden", !initialDarkMode);
+        }
+
+        // Set up theme toggle
+        const darkModeToggle = document.getElementById("dark-mode-toggle");
+        if (darkModeToggle) {
+          darkModeToggle.addEventListener("click", () => {
+            const isDark = htmlTag.classList.contains(darkClass);
+            const newDarkMode = !isDark;
+            
+            htmlTag.classList.toggle(darkClass, newDarkMode);
+            htmlTag.setAttribute("data-theme", newDarkMode ? "min-dark" : "min-light");
+            
+            if (sunIcon && moonIcon) {
+              sunIcon.classList.toggle("hidden", newDarkMode);
+              moonIcon.classList.toggle("hidden", !newDarkMode);
+            }
+            
+            setCookie("darkMode", newDarkMode, 30);
+          });
+        }
+      });
+    </script>
+    {
+      pubDate && (
+        <meta
+          property="article:published_time"
+          content={pubDate.toISOString()}
+        />
+      )
+    }
+  </head>
+  <body
+    class="dark:bg-zinc-950 bg-zinc-50 subpixel-antialiased selection:bg-threat-red selection:text-zinc-100 dark:selection:bg-threat-red dark:selection:text-white pt-10 2xl:text-lg font-mono relative"
+  >
+    <div class="fixed inset-0 pointer-events-none">
+      <div class="absolute inset-0 bg-transparent dark:bg-[radial-gradient(circle_at_top,rgba(239,68,68,0.08),transparent_70%)]"></div>
+      <div class="absolute inset-0 bg-transparent dark:bg-[radial-gradient(circle_at_top_right,rgba(239,68,68,0.05),transparent_50%)]"></div>
+    </div>
+    <a
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:fixed focus:z-50 focus:px-4 focus:py-2 focus:bg-threat-red focus:text-white focus:outline-none"
+      >Skip to main content</a
+    >
+    <div class="relative">
+      <nav class="mb-12 sm:mb-16 mx-auto flex flex-col sm:flex-row items-center justify-between px-3 sm:px-6 lg:px-2 relative max-w-5xl gap-3 sm:gap-0">
+        <a href="/" class="text-zinc-900 dark:text-zinc-100 hover:text-threat-red dark:hover:text-threat-red transition-colors">Evolved Threat</a>
+        <div class="flex items-center space-x-3 sm:space-x-8">
+          <ul class="flex space-x-4 sm:space-x-6">
+            {
+              navigation.map((item) => (
+                <li>
+                  <Link {...item} />
+                </li>
+              ))
+            }
+          </ul>
+          <button
+        id="dark-mode-toggle"
+        class="dark:text-zinc-100 text-zinc-900 dark:hover:text-zinc-300 hover:text-zinc-600 my-2.5"
+        aria-label="Toggle theme mode"
+      >
+        <Icon name="sun" class="w-6 h-6 sun-icon" />
+        <Icon name="moon" class="w-6 h-6 moon-icon" />
+      </button>
+    </nav>
+    <main
+      class="px-3 sm:px-6 lg:px-2 mx-auto dark:text-zinc-200 text-zinc-600"
+      id="main-content"
+      class:list={{
+        "max-w-6xl": wide,
+        "max-w-5xl": !wide,
+      }}
+    >
+      <noscript>
+        <Callout type="error" title="NOTICE">
+          Some features on this website won't work without JavaScript such as
+          theme toggle, search bar, and copy article.
+        </Callout>
+      </noscript>
+      <slot />
+    </main>
+    <footer class="mt-12 pb-12">
+      <div
+        class="mx-auto max-w-6xl px-3 sm:px-6 lg:px-2 text-center text-[0.7rem] sm:text-xs lg:text-sm dark:text-zinc-200 text-zinc-600"
+      >
+        <p>
+          &copy; {new Date().getFullYear()}
+          {author}. All rights reserved. <span
+            ></span
+          >
+        </p>
+      </div>
+    </footer>
+    </div>
+  </body>
+</html>
+
+
+<style>
+  body::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  body::-webkit-scrollbar-thumb {
+    @apply bg-threat-red;
+  }
+
+  .dark body::-webkit-scrollbar-thumb {
+    @apply bg-threat-red;
+  }
+
+</style>

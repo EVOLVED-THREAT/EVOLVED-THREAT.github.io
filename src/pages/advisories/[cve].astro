@@ -1,0 +1,141 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import type { GetStaticPaths } from "astro";
+import { getCollection, type CollectionEntry } from "astro:content";
+import { Image } from "astro:assets";
+import dominikImage from "../../assets/me.jpg";
+import chebuyaImage from "../../assets/chebuya.jpg";
+
+const authorImages: Record<string, ImageMetadata> = {
+  "Dominik Penner": dominikImage,
+  "chebuya": chebuyaImage
+} as const;
+
+// Fallback to default image if author not found
+const getAuthorImage = (authorName: string): ImageMetadata => {
+  return authorImages[authorName] || dominikImage;
+};
+
+export const getStaticPaths = (async () => {
+  const advisories = await getCollection("advisories");
+  return advisories.map((advisory) => ({
+    params: { cve: advisory.data.cve?.split(' ')[0]?.replace(/^cve-/i, 'CVE-') },
+    props: { advisory },
+  }));
+}) satisfies GetStaticPaths;
+
+export interface Props {
+  advisory: CollectionEntry<"advisories">;
+}
+
+const { advisory } = Astro.props;
+const { Content } = await advisory.render();
+const severityColor: Record<'HIGH' | 'MEDIUM' | 'LOW', string> = {
+  HIGH: 'bg-red-600 text-white dark:bg-red-500 dark:text-white font-bold',
+  MEDIUM: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+  LOW: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
+};
+
+// Type assertion to ensure severity is a valid key
+const severity = advisory.data.severity as keyof typeof severityColor;
+---
+
+<Layout title={`${advisory.data.title} | Security Advisory | Evolved Threat`} description={advisory.data.description}>
+  <div class="max-w-3xl mx-auto">
+    <a href="/advisories" class="text-zinc-500 dark:text-zinc-400 hover:text-threat-red dark:hover:text-threat-red mb-8 inline-block">
+      ← Back to Advisories
+    </a>
+
+    <div class="bg-white dark:bg-zinc-900 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-800 p-8">
+      <div class="mb-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-4">
+          <h1 class="text-3xl font-bold text-zinc-900 dark:text-zinc-100 break-words">{advisory.data.title}</h1>
+          <div class="flex flex-row sm:flex-col items-start sm:items-end gap-2 flex-wrap">
+            <span class={`px-2.5 py-0.5 rounded-full text-xs font-medium ${severityColor[severity]}`}>
+              {advisory.data.severity}
+            </span>
+            {advisory.data.cve && advisory.data.cve.split(' ').map((cve: string) => (
+              <span class="text-sm font-mono text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded whitespace-nowrap">
+                CVE-{cve.replace(/^cve-/i, '')}
+              </span>
+            ))}
+            <time datetime={advisory.data.date.toISOString()} class="text-sm text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded whitespace-nowrap">
+              {advisory.data.date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+            </time>
+          </div>
+        </div>
+        <div class="flex items-center gap-4 mb-4">
+          {advisory.data.authors.map((author: { name: string; handle: string }) => (
+            <div class="flex items-center gap-4">
+              <div class="aspect-square rounded-full overflow-hidden">
+                <Image
+                  src={getAuthorImage(author.name)}
+                  alt={`${author.name}'s profile picture`}
+                  loading="eager"
+                  class="aspect-square w-10"
+                  width={80}
+                  height={80}
+                />
+              </div>
+              <div class="flex flex-col">
+                <p class="dark:text-zinc-400 text-zinc-700 text-sm">
+                  <span class="font-semibold">{author.name}</span>
+                  <a
+                    class="dark:text-zinc-50 text-zinc-900 hover:underline block"
+                    href={`https://x.com/${author.handle}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    @{author.handle}
+                  </a>
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      <div class="space-y-6">
+        <div>
+          <h2 class="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">DESCRIPTION</h2>
+          <p class="text-zinc-600 dark:text-zinc-400 break-words">{advisory.data.description}</p>
+        </div>
+
+        <div>
+          <h2 class="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">DETAILS</h2>
+          <div class="text-zinc-600 dark:text-zinc-400 prose dark:prose-invert max-w-none overflow-x-auto">
+            <Content />
+          </div>
+        </div>
+
+        <div>
+          <h2 class="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">AFFECTING</h2>
+          <ul class="space-y-1">
+            {advisory.data.affecting.map((item: { name: string; version: string }) => (
+              <li class="flex items-center space-x-2">
+                <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                <span class="text-zinc-600 dark:text-zinc-400">{item.name} • {item.version}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {advisory.data.references && advisory.data.references.length > 0 && (
+          <div>
+            <h2 class="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">REFERENCES</h2>
+            <ul class="space-y-1">
+              {advisory.data.references.map((ref: string) => (
+                <li>
+                  <a href={ref} target="_blank" rel="noopener noreferrer" class="text-threat-red hover:underline text-sm break-all">
+                    {ref}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+      </div>
+    </div>
+  </div>
+</Layout>

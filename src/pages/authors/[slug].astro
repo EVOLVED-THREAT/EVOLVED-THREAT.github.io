@@ -1,0 +1,25 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Author from '../../components/Author.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const authors = await getCollection('authors');
+  return authors.map(author => ({
+    params: { slug: author.slug },
+    props: { author },
+  }));
+}
+
+const { author } = Astro.props;
+const { data } = author;
+---
+
+<Layout title={`${data.name} | Evolved Threat`}>
+  <main class="container mx-auto px-4 py-8">
+    <div class="max-w-3xl mx-auto">
+      <a href="/authors" class="text-zinc-600 dark:text-zinc-400 hover:underline mb-8 inline-block">&larr; Back to Authors</a>
+      <Author author={author} showBio={true} />
+    </div>
+  </main>
+</Layout>
