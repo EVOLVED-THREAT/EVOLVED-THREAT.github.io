@@ -4,23 +4,25 @@ import Advisory from "../../../../components/Advisory.astro";
 import Pagination from "../../../../components/Pagination.astro";
 import { getCollection } from "astro:content";
 
-export async function getStaticPaths({ paginate }: { paginate: any }) {
+import type { PaginateFunction } from 'astro';
+
+export async function getStaticPaths({ paginate }: { paginate: PaginateFunction }) {
   const allAdvisories = await getCollection("advisories");
-  const severityFilters = ['HIGH', 'MEDIUM', 'LOW'];
+  const severityFilters = ['HIGH', 'MEDIUM', 'LOW'] as const;
   
-  return severityFilters.flatMap(severity => {
-    const filteredAdvisories = allAdvisories.filter((a: any) => a.data.severity === severity);
+  return severityFilters.flatMap(severityLevel => {
+    const filteredAdvisories = allAdvisories.filter(a => a.data.severity === severityLevel);
     const sortedAdvisories = filteredAdvisories.sort((a: any, b: any) => 
       b.data.date.getTime() - a.data.date.getTime()
     );
 
     return paginate(sortedAdvisories, {
       pageSize: 6,
-      params: ({ currentPage }: { currentPage: number }) => ({
-        severity: severity.toLowerCase(),
-        page: String(currentPage)
-      }),
-      props: { severity }
+      params: {
+        severity: String(severityLevel).toLowerCase(),
+        page: '1'
+      },
+      props: { severity: severityLevel }
     });
   });
 }
