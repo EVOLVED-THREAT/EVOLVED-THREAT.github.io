@@ -20,7 +20,7 @@ const sortedAuthors = authors.sort((a, b) => {
     <p class="text-zinc-600 dark:text-zinc-400 mb-4">Meet the security researchers and contributors behind Evolved Threat.</p>
   </div>
 
-  <div class="flex flex-col items-center gap-4 max-w-2xl mx-auto">
+  <div class="flex flex-col items-center gap-4 max-w-2xl mx-auto px-4">
     {sortedAuthors.map(author => (
       <Author author={author} />
     ))}
