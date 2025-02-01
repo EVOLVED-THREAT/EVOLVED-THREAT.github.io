@@ -4,6 +4,19 @@ import type { CollectionEntry } from 'astro:content';
 import { getCollection } from 'astro:content';
 import WorkSection from './WorkSection.astro';
 
+// Import all author images
+import bradImage from '../assets/brad.jpg';
+import chebuyaImage from '../assets/chebuya.jpg';
+import jakeImage from '../assets/jake.jpg';
+import meImage from '../assets/me.jpg';
+
+const imageMap = {
+  'brad.jpg': bradImage,
+  'chebuya.jpg': chebuyaImage,
+  'jake.jpg': jakeImage,
+  'me.jpg': meImage
+};
+
 interface Props {
   author: CollectionEntry<'authors'>;
   showBio?: boolean;
@@ -55,23 +68,15 @@ const allWritings = [
       <div class="flex items-start gap-4">
         {data.avatarPath && (
           <div class="w-16 h-16 relative flex-shrink-0">
-            {() => {
-              try {
-                const imagePath = `../assets/${data.avatarPath}`;
-                return (
-                  <Image 
-                    src={import(imagePath)} 
-                    alt={data.name} 
-                    width={64} 
-                    height={64}
-                    class="rounded-full w-full h-full object-cover"
-                  />
-                );
-              } catch (error) {
-                console.error('Error loading image:', error);
-                return null;
-              }
-            }}
+            {data.avatarPath && imageMap[data.avatarPath as keyof typeof imageMap] && (
+              <Image 
+                src={imageMap[data.avatarPath as keyof typeof imageMap]}
+                alt={data.name} 
+                width={64} 
+                height={64}
+                class="rounded-full w-full h-full object-cover"
+              />
+            )}
           </div>
         )}
         <div class="flex flex-col min-w-0">
