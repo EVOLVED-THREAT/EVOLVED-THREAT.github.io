@@ -3,10 +3,10 @@ export const author = "Evolved Threat";
 export const defaultMeta = {
   title: "Evolved Threat",
   description:
-    "Breaking software, one vulnerability at a time. Security research and exploit development blog.",
+    "Evolved Threat provides unique adversary simluations and trainings, fully understanding the evolving threat landscape.",
   ogImage: {
     src: "/static/banner.png",
-    alt: "Astro Zinc with Astro Logo",
+    alt: "Evolved Threat",
   },
 };
 
